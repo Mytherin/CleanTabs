@@ -1,0 +1,6 @@
+/target
+/extension/node_modules
+/extension/dist
+/extension/src/core
+/extension/test/dist-test
+/extension/test/screenshots

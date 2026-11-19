@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>CleanTabs</title>
+  <link rel="stylesheet" href="ui.css">
+  <style>
+    body { width: 340px; padding: 14px; }
+    header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    h1 { font-size: 15px; margin: 0; }
+    label.caption { display: block; font-weight: 600; margin: 0 0 6px; }
+    .buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0 8px; }
+    .check { display: flex; align-items: center; gap: 6px; }
+    h2 { font-size: 12px; color: var(--fg2); font-weight: 600; margin: 16px 0 4px; text-transform: uppercase; letter-spacing: .04em; }
+    #recent button { display: flex; gap: 8px; align-items: center; width: 100%; border: 0; background: none; padding: 6px 4px; border-radius: 6px; text-align: left; }
+    #recent button:hover { background: var(--bg2); }
+    #recent img { width: 16px; height: 16px; flex: none; }
+    #recent span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>CleanTabs</h1>
+    <button class="link" id="manage">All saved tabs</button>
+  </header>
+  <section id="setup" hidden>
+    <p class="muted">CleanTabs keeps your tabs as notes in CleanNotes, in its S3 account's folder. Set it up with that account first.</p>
+    <button class="btn primary" id="setupBtn">Set up</button>
+  </section>
+  <section id="main" hidden>
+    <label class="caption" for="folder">Save to Tabs /</label>
+    <input class="field" id="folder" list="folders" autocomplete="off">
+    <datalist id="folders"></datalist>
+    <div class="buttons">
+      <button class="btn" data-scope="tab">Save this tab</button>
+      <button class="btn primary" data-scope="window">Save window</button>
+    </div>
+    <label class="check small"><input type="checkbox" id="close"> Close the tabs once saved</label>
+    <div class="error" id="msg"></div>
+    <h2>Recently saved</h2>
+    <div id="recent"></div>
+  </section>
+  <script src="popup.js"></script>
+</body>
+</html>

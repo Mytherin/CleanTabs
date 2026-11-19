@@ -1,0 +1,47 @@
+body { display: grid; grid-template-columns: 240px 1fr; height: 100vh; overflow: hidden; }
+aside { background: var(--bg2); border-right: 1px solid var(--line); display: flex; flex-direction: column; padding: 14px 8px; overflow: auto; }
+.brand { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15px; padding: 0 8px 12px; }
+.brand img { width: 22px; height: 22px; }
+nav { flex: 1; }
+.nav-item {
+  display: flex; align-items: center; gap: 6px; width: 100%; border: 0; background: none; text-align: left;
+  padding: 6px 8px; border-radius: 7px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.nav-item .n { margin-left: auto; color: var(--fg2); font-size: 12px; }
+.nav-item:hover { background: color-mix(in srgb, var(--fg) 6%, transparent); }
+.nav-item.current { background: color-mix(in srgb, var(--accent) 30%, transparent); font-weight: 600; }
+.nav-item.drop { outline: 2px solid var(--select); outline-offset: -2px; }
+.aside-foot { border-top: 1px solid var(--line); padding-top: 8px; }
+main { overflow: auto; padding: 18px 24px 40px; }
+.bar { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+.bar h1 { font-size: 20px; margin: 0; }
+.search { width: 240px; margin-left: auto; }
+.spacer { flex: 1; }
+.selection { background: color-mix(in srgb, var(--select) 12%, transparent); padding: 6px 10px; border-radius: 8px; }
+.selection select { width: auto; }
+h2.group { font-size: 13px; color: var(--fg2); margin: 22px 0 8px; display: flex; gap: 8px; align-items: center; }
+h2.group button { font-size: 12px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+.card {
+  position: relative; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden;
+  cursor: pointer; display: flex; flex-direction: column; transition: box-shadow .12s;
+}
+.card:hover { box-shadow: 0 4px 14px rgb(0 0 0 / .12); }
+.card.selected { outline: 2px solid var(--select); outline-offset: -1px; }
+.card .shot { aspect-ratio: 16 / 10; background: var(--bg2) center / cover no-repeat; display: flex; align-items: center; justify-content: center; }
+.card .shot img.big { width: 40px; height: 40px; opacity: .85; }
+.card .body { padding: 8px 10px 10px; min-width: 0; }
+.card .title { font-weight: 600; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.card .site { display: flex; align-items: center; gap: 6px; color: var(--fg2); font-size: 12px; margin-top: 4px; }
+.card .site img { width: 14px; height: 14px; }
+.card .site span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card .text { color: var(--fg2); font-size: 12px; margin-top: 6px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-line; }
+.card input[type=checkbox] { position: absolute; top: 8px; left: 8px; width: 18px; height: 18px; opacity: 0; }
+.card:hover input[type=checkbox], .card.selected input[type=checkbox], .selecting .card input[type=checkbox] { opacity: 1; }
+.empty { color: var(--fg2); padding: 40px 0; text-align: center; }
+#settings { max-width: 520px; }
+#settings label { display: block; margin-bottom: 10px; font-weight: 500; }
+#settings label .field { margin-top: 4px; font-weight: 400; }
+#settings .row { display: flex; gap: 8px; align-items: center; }
+#settings h2 { font-size: 15px; margin-top: 28px; }
+.check { display: flex !important; align-items: center; gap: 8px; }

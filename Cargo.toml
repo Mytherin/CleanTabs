@@ -1,0 +1,22 @@
+[workspace]
+# wasm: CleanTabs' core for the Chrome extension (WebAssembly). Almost all
+#       of it is CleanNotes' `cleanbucket` crate (its `notes` module: the
+#       S3 folder of a CleanNotes account, and tab notes).
+members = ["wasm"]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = "s"
+
+# Argon2 (unlocking an encrypted folder) is unbearably slow unoptimised.
+[profile.dev.package.argon2]
+opt-level = 3
+[profile.dev.package.blake2]
+opt-level = 3
