@@ -144,7 +144,7 @@ dependencies = [
 [[package]]
 name = "cleanbucket"
 version = "0.1.0"
-source = "git+https://github.com/Mytherin/CleanNotes?rev=9f18bb96004ca96709228a3987183765d77332f4#9f18bb96004ca96709228a3987183765d77332f4"
+source = "git+https://github.com/Mytherin/CleanNotes?rev=7babdb6f74d6ff5fcec3808d68f78123b9a0f8ca#7babdb6f74d6ff5fcec3808d68f78123b9a0f8ca"
 dependencies = [
  "argon2",
  "base64",

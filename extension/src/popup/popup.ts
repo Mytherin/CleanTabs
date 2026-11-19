@@ -3,7 +3,7 @@
 import { ask, defaultFolderName, type Listing, type Scope, type Status } from "../shared/types";
 import { $, el, favicon, parseFolder, showFolder } from "../shared/ui";
 
-const READING_LIST = "Reading List";
+const SAVED_TABS = "Saved Tabs";
 
 function openPage(hash = ""): void {
   void chrome.tabs.create({ url: chrome.runtime.getURL(`tabs.html${hash}`) });
@@ -28,7 +28,7 @@ function fill(l: Listing): void {
 async function save(scope: Scope): Promise<void> {
   const msg = $("msg");
   const typed = parseFolder(($("folder") as HTMLInputElement).value);
-  const folder = typed.length ? typed : [scope === "tab" ? READING_LIST : defaultFolderName()];
+  const folder = typed.length ? typed : [scope === "tab" ? SAVED_TABS : defaultFolderName()];
   const buttons = document.querySelectorAll<HTMLButtonElement>("[data-scope]");
   buttons.forEach((b) => (b.disabled = true));
   msg.textContent = "";
@@ -56,7 +56,7 @@ async function main(): Promise<void> {
     return;
   }
   $("main").hidden = false;
-  ($("folder") as HTMLInputElement).placeholder = `${defaultFolderName()} (one tab: ${READING_LIST})`;
+  ($("folder") as HTMLInputElement).placeholder = `${defaultFolderName()} (one tab: ${SAVED_TABS})`;
   ($("close") as HTMLInputElement).checked = (await chrome.storage.local.get("closeAfterSave")).closeAfterSave === true;
   $("close").onchange = () => void chrome.storage.local.set({ closeAfterSave: ($("close") as HTMLInputElement).checked });
   document.querySelectorAll<HTMLButtonElement>("[data-scope]").forEach((b) => (b.onclick = () => void save(b.dataset.scope as Scope)));

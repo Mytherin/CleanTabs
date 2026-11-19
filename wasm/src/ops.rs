@@ -479,7 +479,7 @@ mod tests {
         block_on(async {
             let l = list(&a, &s3, now()).await.unwrap();
             let got: Vec<(&str, Vec<String>, &str)> = l.tabs.iter().map(|t| (t.title.as_str(), t.folder.clone(), t.text.as_str())).collect();
-            assert_eq!(got, [("A", vec!["Research".to_string()], "my note"), ("B", vec!["Saved".to_string()], "my note")]);
+            assert_eq!(got, [("A", vec!["Research".to_string()], "my note"), ("B", vec!["Saved Tabs".to_string()], "my note")]);
             assert_eq!(thumbnail(&a, &pic_name, &s3).await.unwrap(), Some(pic.clone()), "the picture came along");
             assert_eq!(list(&a, &s3, now()).await.unwrap().tabs.len(), 2, "moved once");
         });
@@ -504,7 +504,7 @@ mod tests {
             let a = account(c.key);
             let new = vec![NewTab { url: "https://secret.example/".into(), title: "Secret".into(), thumbnail: Some(jpeg(2)), ..Default::default() }];
             let saved = save(&a, &[], new, &s3, now()).await.unwrap();
-            assert_eq!(saved[0].folder, ["Saved"]);
+            assert_eq!(saved[0].folder, ["Saved Tabs"]);
             assert_eq!(list(&a, &s3, now()).await.unwrap().tabs[0].title, "Secret");
             assert!(thumbnail(&a, saved[0].thumbnail.as_ref().unwrap(), &s3).await.unwrap().is_some());
             assert!(list(&account(None), &s3, now()).await.unwrap().tabs.is_empty(), "unreadable without the key");
