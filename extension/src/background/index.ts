@@ -11,7 +11,7 @@
 //   memory (and chrome.storage.session) until the tab is saved or closed.
 
 import init, * as core from "../core/core.js";
-import { ROOT, type Account, type Listing, type Reply, type Request, type Scope, type Status, type Tab } from "../shared/types";
+import { type Account, type Listing, type Reply, type Request, type Scope, type Status, type Tab } from "../shared/types";
 
 let ready: Promise<unknown> | undefined;
 function loadCore(): Promise<unknown> {
@@ -76,13 +76,13 @@ async function refresh(): Promise<Listing> {
 
 /** The listing with `changed` tabs put in (by stem). */
 async function merge(changed: Tab[]): Promise<Listing> {
-  const l = (await cached()) ?? { tabs: [], folders: [[ROOT]] };
+  const l = (await cached()) ?? { tabs: [], folders: [] };
   const byStem = new Map(l.tabs.map((t) => [t.stem, t]));
   for (const t of changed) byStem.set(t.stem, t);
   const tabs = [...byStem.values()].sort((a, b) => a.created.localeCompare(b.created));
   const folders = new Map(l.folders.map((f) => [JSON.stringify(f), f]));
   for (const t of changed) {
-    if (t.deleted || t.folder[0] !== ROOT) continue;
+    if (t.deleted) continue;
     for (let n = 1; n <= t.folder.length; n++) folders.set(JSON.stringify(t.folder.slice(0, n)), t.folder.slice(0, n));
   }
   const sorted = [...folders.values()].sort((a, b) => a.join("\u0000").localeCompare(b.join("\u0000")));
@@ -261,7 +261,7 @@ async function closeTabs(tabs: chrome.tabs.Tab[]): Promise<void> {
 async function open(tabs: Tab[], base: string[], newWindow: boolean): Promise<void> {
   if (!tabs.length) throw new Error("There are no tabs to open.");
   const groupOf = (t: Tab): string | null => {
-    const inBase = base.length && base.every((s, i) => t.folder[i] === s);
+    const inBase = base.every((s, i) => t.folder[i] === s);
     return inBase && t.folder.length > base.length ? t.folder[base.length] : null;
   };
   // Ungrouped first, then each group's tabs together.
@@ -365,8 +365,8 @@ async function handle(req: Request): Promise<unknown> {
     case "newFolder": {
       await loadCore();
       await core.new_folder(await account(), req.folder, s3fetch);
-      const l = (await cached()) ?? { tabs: [], folders: [[ROOT]] };
-      const path = [ROOT, ...req.folder.map((s) => s.trim().replace(/\//g, "-")).filter(Boolean)];
+      const l = (await cached()) ?? { tabs: [], folders: [] };
+      const path = [...req.folder.map((s) => s.trim().replace(/\//g, "-")).filter(Boolean)];
       const folders = [...l.folders];
       for (let n = 1; n <= path.length; n++) {
         if (!folders.some((f) => f.join("\u0000") === path.slice(0, n).join("\u0000"))) folders.push(path.slice(0, n));

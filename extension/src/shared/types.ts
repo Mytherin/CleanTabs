@@ -19,7 +19,7 @@ export interface Tab {
   stem: string;
   etag: string;
   id: string;
-  /** Its note's folder from the top: `[ROOT, "Reading"]`. */
+  /** Its collection: `["Research", "Docs"]`. */
   folder: string[];
   created: string;
   modified: string;
@@ -34,7 +34,7 @@ export interface Tab {
 
 export interface Listing {
   tabs: Tab[];
-  /** Folders under (and including) `Tabs`, from the top. */
+  /** Every collection, by path. */
   folders: string[][];
 }
 
@@ -76,19 +76,11 @@ export async function ask<T>(req: Request): Promise<T> {
   return r.value;
 }
 
-/** The CleanNotes folder saved tabs are kept in (`cleanbucket::notes::tabs::FOLDER`).
- * CleanNotes shows it as its own CleanTabs section, apart from the notes. */
-export const ROOT = "CleanTabs";
-
-/** The folder's path below ROOT, or `null` if it isn't under it. */
-export function underTabs(folder: string[]): string[] | null {
-  return folder[0] === ROOT ? folder.slice(1) : null;
-}
-
-/** How a folder is shown: "All Tabs" for ROOT, else its path below it. */
+/** How a collection is shown; the empty path is all of them. (Tabs are
+ * kept in the account folder's `tabs/` directory, whose top-level folders
+ * are the collections; CleanNotes shows it as its CleanTabs section.) */
 export function folderLabel(folder: string[]): string {
-  const rel = underTabs(folder) ?? folder;
-  return rel.length ? rel.join(" / ") : "All Tabs";
+  return folder.length ? folder.join(" / ") : "All Tabs";
 }
 
 export function host(url: string): string {

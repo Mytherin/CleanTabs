@@ -1,13 +1,13 @@
 // The CleanTabs page: saved tabs as previews of their pages, by folder
 // (Tabs and its sub-folders in CleanNotes), and the settings.
 
-import { ask, folderLabel, host, ROOT, underTabs, type Account, type Listing, type Status, type Tab } from "../shared/types";
+import { ask, folderLabel, host, type Account, type Listing, type Status, type Tab } from "../shared/types";
 import { $, el, favicon, parseFolder } from "../shared/ui";
 
 type View = { kind: "folder"; path: string[] } | { kind: "trash" } | { kind: "settings" };
 
-let listing: Listing = { tabs: [], folders: [[ROOT]] };
-let view: View = { kind: "folder", path: [ROOT] };
+let listing: Listing = { tabs: [], folders: [] };
+let view: View = { kind: "folder", path: [] };
 const selected = new Set<string>();
 let query = "";
 
@@ -42,12 +42,13 @@ function navItem(label: string, current: boolean, onClick: () => void, count?: n
 }
 
 function renderNav(): void {
-  const items = listing.folders
-    .filter((f) => f[0] === ROOT)
+  // All Tabs (the empty path), then every collection.
+  const items = [[] as string[], ...listing.folders]
     .map((f) => {
       const n = live().filter((t) => within(t, f)).length;
       const isCurrent = view.kind === "folder" && key(view.path) === key(f);
-      const b = navItem(f.length === 1 ? "All Tabs" : f[f.length - 1], isCurrent, () => go({ kind: "folder", path: f }), n, f.length - 1);
+      const b = navItem(f.length === 0 ? "All Tabs" : f[f.length - 1], isCurrent, () => go({ kind: "folder", path: f }), n, f.length);
+      if (!f.length) return b;
       // Drop tabs on a folder to move them there.
       b.ondragover = (e) => {
         if (e.dataTransfer?.types.includes("application/x-cleantabs")) {
@@ -190,7 +191,7 @@ function renderSelection(): void {
   const moveTo = $("moveTo") as HTMLSelectElement;
   moveTo.replaceChildren(
     el("option", { value: "" }, "Move to…"),
-    ...listing.folders.filter((f) => f[0] === ROOT).map((f) => el("option", { value: JSON.stringify(f) }, folderLabel(f))),
+    ...listing.folders.map((f) => el("option", { value: JSON.stringify(f) }, folderLabel(f))),
     el("option", { value: "new" }, "New folder…"),
   );
 }
@@ -215,12 +216,12 @@ function go(v: View): void {
 
 async function load(refresh: boolean): Promise<void> {
   listing = await ask<Listing>({ type: "list", refresh });
-  if (view.kind === "folder" && !listing.folders.some((f) => key(f) === key((view as { path: string[] }).path))) view = { kind: "folder", path: [ROOT] };
+  if (view.kind === "folder" && view.path.length && !listing.folders.some((f) => key(f) === key((view as { path: string[] }).path))) view = { kind: "folder", path: [] };
   render();
 }
 
 async function move(stems: string[], folder: string[]): Promise<void> {
-  const rel = underTabs(folder) ?? folder;
+  const rel = folder;
   await run("Moving…", async () => {
     listing = await ask<Listing>({ type: "move", stems, folder: rel });
     selected.clear();
@@ -287,7 +288,7 @@ async function connect(e: SubmitEvent): Promise<void> {
     $("passLabel").hidden = true;
     (form.elements.namedItem("passphrase") as HTMLInputElement).value = "";
     await showSettings();
-    go({ kind: "folder", path: [ROOT] });
+    go({ kind: "folder", path: [] });
   } catch (x) {
     const error = x as Error;
     $("connected").textContent = "";
@@ -306,11 +307,11 @@ function viewFromHash(): View {
   if (h === "deleted") return { kind: "trash" };
   try {
     const p = JSON.parse(h);
-    if (Array.isArray(p) && p[0] === ROOT) return { kind: "folder", path: p };
+    if (Array.isArray(p) && p.every((s) => typeof s === "string")) return { kind: "folder", path: p };
   } catch {
     // The top.
   }
-  return { kind: "folder", path: [ROOT] };
+  return { kind: "folder", path: [] };
 }
 
 async function main(): Promise<void> {
@@ -327,10 +328,10 @@ async function main(): Promise<void> {
   $("openAll").onclick = () => void run("Opening…", () => ask({ type: "open", folder: view.kind === "folder" && !query ? view.path : undefined, stems: query ? live().filter(matches).map((t) => t.stem) : undefined, newWindow: true }));
   $("openHere").onclick = () => void run("Opening…", () => ask({ type: "open", folder: view.kind === "folder" && !query ? view.path : undefined, stems: query ? live().filter(matches).map((t) => t.stem) : undefined, newWindow: false }));
   $("newFolder").onclick = () => {
-    const path = askFolderName(view.kind === "folder" ? view.path : [ROOT]);
+    const path = askFolderName(view.kind === "folder" ? view.path : []);
     if (!path) return;
     void run("Making the folder…", async () => {
-      listing = await ask<Listing>({ type: "newFolder", folder: path.slice(1) });
+      listing = await ask<Listing>({ type: "newFolder", folder: path });
       go({ kind: "folder", path });
     });
   };
@@ -355,14 +356,14 @@ async function main(): Promise<void> {
     const v = ($("moveTo") as HTMLSelectElement).value;
     ($("moveTo") as HTMLSelectElement).value = "";
     if (!v) return;
-    const target = v === "new" ? askFolderName([ROOT]) : (JSON.parse(v) as string[]);
+    const target = v === "new" ? askFolderName([]) : (JSON.parse(v) as string[]);
     if (target) void move([...selected], target);
   };
   ($("form") as HTMLFormElement).onsubmit = (e) => void connect(e);
   $("disconnect").onclick = async () => {
     if (!confirm("Disconnect CleanTabs from this account? Saved tabs stay in CleanNotes.")) return;
     await ask({ type: "disconnect" });
-    listing = { tabs: [], folders: [[ROOT]] };
+    listing = { tabs: [], folders: [] };
     $("connected").textContent = "";
     await showSettings();
   };

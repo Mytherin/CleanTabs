@@ -19,7 +19,7 @@
   <main>
     <section id="browse">
       <header class="bar">
-        <h1 id="title">Tabs</h1>
+        <h1 id="title">All Tabs</h1>
         <span class="muted" id="count"></span>
         <input class="field search" id="search" type="search" placeholder="Search saved tabs">
       </header>
@@ -44,11 +44,11 @@
     </section>
     <section id="settings" hidden>
       <h1>Settings</h1>
-      <p class="muted">CleanTabs saves tabs as notes in a CleanNotes account that syncs with S3, in its <b>Tabs</b> folder. Use the same settings as that account in CleanNotes (Settings → Accounts).</p>
+      <p class="muted">CleanTabs saves tabs as notes for a CleanNotes account that syncs with S3: in a <b>tabs/</b> directory of its folder, which CleanNotes shows as its own CleanTabs section, apart from your notes. Use the same settings as that account in CleanNotes (Settings → Accounts).</p>
       <form id="form" autocomplete="off">
         <label>Bucket <input class="field" name="bucket" required></label>
         <label>Region <input class="field" name="region" value="us-east-1" required></label>
-        <label>Folder in the bucket <input class="field" name="prefix" value="CleanNotes"></label>
+        <label>Folder in the bucket <span class="muted">(as in CleanNotes; empty if your notes are at the top of the bucket)</span> <input class="field" name="prefix" value="CleanNotes"></label>
         <label>Address of an S3-compatible service <span class="muted">(optional, for R2 or MinIO)</span> <input class="field" name="endpoint" placeholder="https://…"></label>
         <label>Access key ID <input class="field" name="access_key_id" required></label>
         <label>Secret access key <input class="field" name="secret_access_key" type="password" required></label>

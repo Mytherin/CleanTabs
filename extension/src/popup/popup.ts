@@ -1,6 +1,6 @@
 // The toolbar popup: save this tab or window to a folder under Tabs.
 
-import { ask, defaultFolderName, underTabs, type Listing, type Scope, type Status } from "../shared/types";
+import { ask, defaultFolderName, type Listing, type Scope, type Status } from "../shared/types";
 import { $, el, favicon, parseFolder, showFolder } from "../shared/ui";
 
 const READING_LIST = "Reading List";
@@ -12,7 +12,7 @@ function openPage(hash = ""): void {
 
 function fill(l: Listing): void {
   const list = $("folders");
-  list.replaceChildren(...l.folders.map(underTabs).filter((f): f is string[] => !!f && f.length > 0).map((f) => el("option", { value: showFolder(f) })));
+  list.replaceChildren(...l.folders.map((f) => el("option", { value: showFolder(f) })));
   const recent = l.tabs.filter((t) => !t.deleted).slice(-6).reverse();
   $("recent").replaceChildren(
     ...(recent.length

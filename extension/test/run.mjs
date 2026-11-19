@@ -77,7 +77,7 @@ try {
   console.log("Connecting");
   const account = { bucket: "bucket", region: "us-east-1", prefix: "CleanNotes", endpoint: `http://127.0.0.1:${s3.port}`, access_key_id: "AK", secret_access_key: "SK" };
   const empty = await value("connect", { account });
-  check("an empty account lists no tabs", empty.tabs.length === 0 && JSON.stringify(empty.folders) === '[["CleanTabs"]]', JSON.stringify(empty));
+  check("an empty account lists no tabs", empty.tabs.length === 0 && JSON.stringify(empty.folders) === '[]', JSON.stringify(empty));
   check("pictures can be turned on", (await value("setPictures", { on: true })) === true);
 
   console.log("Saving a window");
@@ -97,21 +97,22 @@ try {
   }
   const saved = await value("save", { scope: "window", windowId: win, folder: ["Research"], close: true });
   check("four tabs saved", saved.length === 4, JSON.stringify(saved.map((t) => t.title)));
-  check("in CleanTabs / Research, the group's in CleanTabs / Research / Docs",
-    JSON.stringify(saved.map((t) => t.folder.join("/"))) === JSON.stringify(["CleanTabs/Research", "CleanTabs/Research", "CleanTabs/Research/Docs", "CleanTabs/Research/Docs"]),
+  check("in Research, the group's in Research / Docs",
+    JSON.stringify(saved.map((t) => t.folder.join("/"))) === JSON.stringify(["Research", "Research", "Research/Docs", "Research/Docs"]),
     JSON.stringify(saved.map((t) => t.folder)));
   const pictured = saved.filter((t) => t.thumbnail).length;
   check("tabs shown before saving have pictures", pictured >= 3, `${pictured} of 4`);
   check("the window was closed", !(await ctl.evaluate(async (w) => (await chrome.windows.getAll()).some((x) => x.id === w), win)));
 
   console.log("What's in the bucket");
-  const objects = [...s3.objects.entries()].map(([k, v]) => [k.replace(/^bucket\/CleanNotes\//, ""), v.body]);
+  const objects = [...s3.objects.entries()].map(([k, v]) => [k.replace(/^bucket\/CleanNotes\/tabs\//, ""), v.body]);
   const notes = objects.filter(([k]) => k.startsWith("notes/tab-"));
   check("one note per tab", notes.length === 4, objects.map(([k]) => k).join(", "));
   const alpha = notes.map(([, b]) => b.toString()).find((t) => t.includes("Page alpha"));
-  check("a tab note is CleanNotes' format", /^---\nid: tab-[0-9a-f]{32}\nfolder: \[CleanTabs, Research\]\ncreated: .*Z\nmodified: .*Z\n---\n# Page alpha\n\n\[127\.0\.0\.1:\d+\/alpha\]\(http:\/\/127\.0\.0\.1:\d+\/alpha\)\n\n!\[\]\(attachments\/[0-9a-f]{64}\.jpg\)\n$/.test(alpha ?? ""), alpha);
+  check("a tab note is CleanNotes' format", /^---\nid: tab-[0-9a-f]{32}\nfolder: \[Research\]\ncreated: .*Z\nmodified: .*Z\n---\n# Page alpha\n\n\[127\.0\.0\.1:\d+\/alpha\]\(http:\/\/127\.0\.0\.1:\d+\/alpha\)\n\n!\[\]\(attachments\/[0-9a-f]{64}\.jpg\)\n$/.test(alpha ?? ""), alpha);
   const folders = objects.filter(([k]) => k.startsWith("folders/")).map(([, b]) => b.toString()).sort();
-  check("folder objects for CleanTabs and below", JSON.stringify(folders) === JSON.stringify(['["CleanTabs","Research","Docs"]', '["CleanTabs","Research"]', '["CleanTabs"]']), JSON.stringify(folders));
+  check("folder objects for Research and Docs", JSON.stringify(folders) === JSON.stringify(['["Research","Docs"]', '["Research"]']), JSON.stringify(folders));
+  check("everything is in the account folder's tabs/", [...s3.objects.keys()].every((k) => k.startsWith("bucket/CleanNotes/tabs/")), [...s3.objects.keys()].join(", "));
   const pics = objects.filter(([k]) => k.startsWith("attachments/"));
   check("pictures are small JPEGs", pics.length >= 3 && pics.every(([, b]) => b[0] === 0xff && b[1] === 0xd8 && b.length < 60_000), pics.map(([, b]) => b.length).join(", "));
   console.log(`        (pictures: ${pics.map(([, b]) => `${(b.length / 1024).toFixed(1)} KB`).join(", ")})`);
@@ -119,7 +120,7 @@ try {
 
   console.log("Opening the folder again");
   const before = await ctl.evaluate(async () => (await chrome.windows.getAll()).map((w) => w.id));
-  await value("open", { folder: ["CleanTabs", "Research"], newWindow: true });
+  await value("open", { folder: ["Research"], newWindow: true });
   await sleep(1000);
   const reopened = await ctl.evaluate(async (before) => {
     const w = (await chrome.windows.getAll({ populate: true })).find((w) => !before.includes(w.id));
@@ -136,15 +137,15 @@ try {
   await value("delete", { stems: [gamma.stem] });
   const l = await value("list", { refresh: true });
   const find = (s) => l.tabs.find((t) => t.stem === s);
-  check("moved to CleanTabs / Later", find(beta.stem)?.folder.join("/") === "CleanTabs/Later");
+  check("moved to Later", find(beta.stem)?.folder.join("/") === "Later");
   check("deleted to Recently Deleted", !!find(gamma.stem)?.deleted);
-  check("CleanTabs / Later is listed", l.folders.some((f) => f.join("/") === "CleanTabs/Later"), JSON.stringify(l.folders));
-  const gammaNote = s3.objects.get(`bucket/CleanNotes/notes/${gamma.stem}.md`).body.toString();
+  check("Later is listed", l.folders.some((f) => f.join("/") === "Later"), JSON.stringify(l.folders));
+  const gammaNote = s3.objects.get(`bucket/CleanNotes/tabs/notes/${gamma.stem}.md`).body.toString();
   check("deleting sets the note's deleted time, as CleanNotes does", /\ndeleted: .*Z\n/.test(gammaNote), gammaNote);
 
   console.log("The pages");
   const page = await browser.newPage();
-  await page.goto(`chrome-extension://${id}/tabs.html#${encodeURIComponent(JSON.stringify(["CleanTabs", "Research"]))}`);
+  await page.goto(`chrome-extension://${id}/tabs.html#${encodeURIComponent(JSON.stringify(["Research"]))}`);
   await page.waitForSelector(".card");
   await sleep(1500);
   const cards = await page.$$eval(".card", (cs) => cs.map((c) => ({ title: c.querySelector(".title").textContent, pic: c.querySelector(".shot").style.backgroundImage.startsWith('url("data:image/jpeg') })));
