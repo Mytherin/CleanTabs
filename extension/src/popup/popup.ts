@@ -37,7 +37,7 @@ async function save(scope: Scope): Promise<void> {
     const close = ($("close") as HTMLInputElement).checked;
     const saved = await ask<unknown[]>({ type: "save", scope, windowId: win.id, folder, close });
     msg.classList.remove("error");
-    msg.textContent = `Saved ${saved.length} ${saved.length === 1 ? "tab" : "tabs"} to Tabs / ${showFolder(folder)}.`;
+    msg.textContent = `Saved ${saved.length} ${saved.length === 1 ? "tab" : "tabs"} to CleanTabs / ${showFolder(folder)}.`;
     fill(await ask<Listing>({ type: "list", refresh: false }));
   } catch (e) {
     msg.classList.add("error");

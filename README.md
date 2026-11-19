@@ -1,8 +1,8 @@
 # CleanTabs
 
-A Chrome extension that saves, organises and reopens tabs, and keeps them as **notes in [CleanNotes](https://github.com/Mytherin/CleanNotes)**: in the S3 folder of a CleanNotes account, under a **Tabs** folder. There's no server: like CleanNotes and CleanPassword, the extension talks to your S3 bucket directly.
+A Chrome extension that saves, organises and reopens tabs, and keeps them as **notes in [CleanNotes](https://github.com/Mytherin/CleanNotes)**: in the S3 folder of a CleanNotes account, in a **CleanTabs** folder, which CleanNotes shows as a section of its own (like CleanPassword's, but not locked), apart from your notes. There's no server: like CleanNotes and CleanPassword, the extension talks to your S3 bucket directly.
 
-- **Save** this tab, the selected tabs, or the whole window, into `Tabs / <folder>` (the popup, or Ctrl+Shift+S). A window's tab groups go into sub-folders: `Tabs / Research / Docs`. Optionally close the tabs once saved.
+- **Save** this tab, the selected tabs, or the whole window, into `CleanTabs / <folder>` (the popup, or Ctrl+Shift+S). A window's tab groups go into sub-folders: `CleanTabs / Research / Docs`. Optionally close the tabs once saved.
 - **Pictures of pages** (optional): a small JPEG (384×240 at most, typically 10–20 KB) of each page, taken when it has loaded or is shown, saved with the tab. CleanNotes shows it as the note's picture.
 - **Reopen** a folder as a window: its tabs in order, and each sub-folder as a tab group with that name. Or open single tabs, or the selection.
 - **Organise** on the CleanTabs page: folders and sub-folders, drag tabs onto a folder, move or delete several at once, search titles, addresses and what you wrote about them, and Recently Deleted (CleanNotes' own, 30 days).
@@ -14,7 +14,7 @@ Each tab is a CleanNotes note, written exactly as CleanNotes writes its own note
 
 ```text
 <account folder>/notes/tab-<id>.md       one per tab
-<account folder>/folders/<id>.json       Tabs, and its sub-folders
+<account folder>/folders/<id>.json       CleanTabs, and its sub-folders
 <account folder>/attachments/<sha256>.jpg  pictures of pages
 <account folder>/head                    touched after every change
 ```
@@ -22,7 +22,7 @@ Each tab is a CleanNotes note, written exactly as CleanNotes writes its own note
 ```markdown
 ---
 id: tab-3f0c…
-folder: [Tabs, Research, Docs]
+folder: [CleanTabs, Research, Docs]
 created: 2026-11-19T21:58:00.000Z
 modified: 2026-11-19T21:58:00.000Z
 ---
@@ -35,7 +35,7 @@ modified: 2026-11-19T21:58:00.000Z
 Anything written about it since, in CleanNotes.
 ```
 
-- Ids start with `tab-`, so CleanNotes can show tab notes as previews of their pages and CleanTabs lists only its own notes.
+- Ids start with `tab-`, so CleanNotes can keep tab notes apart from your notes and show them as previews of their pages, and CleanTabs lists only its own notes. (The first version saved them under `Tabs`; CleanTabs moves those to `CleanTabs` the next time it reads the account.)
 - A saved window's notes are made a millisecond apart, and are reopened in that order.
 - **Encrypted CleanNotes folders work too.** CleanTabs asks for the folder's passphrase once, makes the same key CleanNotes does (Argon2id), and seals notes, folders and pictures as CleanNotes does.
 

@@ -1,5 +1,5 @@
 //! CleanTabs' core for the Chrome extension, as WebAssembly: tabs saved as
-//! notes in a CleanNotes account's S3 folder, under `Tabs/`. The folder's
+//! notes in a CleanNotes account's S3 folder, under `CleanTabs/`. The folder's
 //! format, its encryption and tab notes are CleanNotes' own (the
 //! `cleanbucket` crate's `notes` module); this is the extension's view of
 //! them ([`ops`]) and its JavaScript interface.
@@ -88,14 +88,14 @@ pub async fn connect(account: JsValue, passphrase: Option<String>, fetch: js_sys
 }
 
 /// `{tabs, folders}`: every saved tab (deleted ones too) and the folders
-/// under `Tabs`.
+/// under `CleanTabs` (moving tabs the first version saved under `Tabs`).
 #[wasm_bindgen]
 pub async fn list(account: JsValue, fetch: js_sys::Function) -> JsResult {
     let account: ops::Account = from_js(account)?;
-    to_js(&ops::list(&account, &JsTransport(fetch)).await.map_err(err)?)
+    to_js(&ops::list(&account, &JsTransport(fetch), chrono::Utc::now()).await.map_err(err)?)
 }
 
-/// Saves tabs (`[{url, title, group?, thumbnail?}]`) in `Tabs/<folder…>`.
+/// Saves tabs (`[{url, title, group?, thumbnail?}]`) in `CleanTabs/<folder…>`.
 /// Returns them as saved.
 #[wasm_bindgen]
 pub async fn save(account: JsValue, folder: Vec<String>, tabs: JsValue, fetch: js_sys::Function) -> JsResult {
@@ -120,7 +120,7 @@ pub async fn recover(account: JsValue, refs: JsValue, fetch: js_sys::Function) -
     to_js(&ops::recover(&account, &refs, &JsTransport(fetch), chrono::Utc::now()).await.map_err(err)?)
 }
 
-/// Moves tabs (`[{stem}]`) to `Tabs/<folder…>`.
+/// Moves tabs (`[{stem}]`) to `CleanTabs/<folder…>`.
 #[wasm_bindgen]
 pub async fn move_to(account: JsValue, refs: JsValue, folder: Vec<String>, fetch: js_sys::Function) -> JsResult {
     let account: ops::Account = from_js(account)?;
@@ -128,7 +128,7 @@ pub async fn move_to(account: JsValue, refs: JsValue, folder: Vec<String>, fetch
     to_js(&ops::move_to(&account, &refs, &folder, &JsTransport(fetch), chrono::Utc::now()).await.map_err(err)?)
 }
 
-/// Makes the folder `Tabs/<folder…>`.
+/// Makes the folder `CleanTabs/<folder…>`.
 #[wasm_bindgen]
 pub async fn new_folder(account: JsValue, folder: Vec<String>, fetch: js_sys::Function) -> Result<(), JsValue> {
     let account: ops::Account = from_js(account)?;

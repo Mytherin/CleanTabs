@@ -100,7 +100,7 @@ pub struct Tab {
     pub stem: String,
     pub etag: String,
     pub id: String,
-    /// The note's folder, from the top: `["Tabs", "Reading"]`.
+    /// The note's folder, from the top: `["CleanTabs", "Reading"]`.
     pub folder: Vec<String>,
     pub created: DateTime<Utc>,
     pub modified: DateTime<Utc>,
@@ -135,7 +135,7 @@ impl Tab {
 #[derive(Debug, Serialize)]
 pub struct Listing {
     pub tabs: Vec<Tab>,
-    /// Paths from the top (`["Tabs", "Reading"]`), sorted.
+    /// Paths from the top (`["CleanTabs", "Reading"]`), sorted.
     pub folders: Vec<Vec<String>>,
 }
 
@@ -144,8 +144,31 @@ fn folder<'a, T: Transport>(account: &Account, loc: &'a Location, cr: &'a Creden
 }
 
 /// Every tab note (deleted ones too: the extension shows Recently
-/// Deleted), oldest first, and the folders under `Tabs`.
-pub async fn list<T: Transport>(account: &Account, transport: &T) -> Result<Listing> {
+/// Deleted), oldest first, and the folders under `CleanTabs`. Tabs the
+/// first version saved under `Tabs` are moved to `CleanTabs` first.
+pub async fn list<T: Transport>(account: &Account, transport: &T, now: DateTime<Utc>) -> Result<Listing> {
+    let listing = read(account, transport).await?;
+    let legacy: Vec<&Tab> = listing.tabs.iter().filter(|t| t.folder.first().map(String::as_str) == Some(tabs::LEGACY_FOLDER)).collect();
+    if legacy.is_empty() {
+        return Ok(listing);
+    }
+    let mut rels: Vec<Vec<String>> = legacy.iter().map(|t| t.folder[1..].to_vec()).collect();
+    rels.sort();
+    rels.dedup();
+    for rel in &rels {
+        new_folder(account, rel, transport).await?;
+    }
+    let refs: Vec<Ref> = legacy.iter().map(|t| Ref { stem: t.stem.clone() }).collect();
+    change(account, &refs, transport, now, |n| {
+        if n.folder.first().map(String::as_str) == Some(tabs::LEGACY_FOLDER) {
+            n.folder[0] = tabs::FOLDER.to_owned();
+        }
+    })
+    .await?;
+    read(account, transport).await
+}
+
+async fn read<T: Transport>(account: &Account, transport: &T) -> Result<Listing> {
     let (loc, cr) = (account.location(), account.credentials());
     let f = folder(account, &loc, &cr, transport)?;
     let mut tabs: Vec<Tab> = f.notes(tabs::ID_PREFIX).await?.iter().filter_map(Tab::from_note).collect();
@@ -183,8 +206,8 @@ pub fn tabs_path(rel: &[String]) -> Vec<String> {
     p
 }
 
-/// Saves `new` as tab notes in `Tabs/<rel>` (a tab in a group in
-/// `Tabs/<rel>/<group>`), in order. Returns them as saved.
+/// Saves `new` as tab notes in `CleanTabs/<rel>` (a tab in a group in
+/// `CleanTabs/<rel>/<group>`), in order. Returns them as saved.
 pub async fn save<T: Transport>(account: &Account, rel: &[String], new: Vec<NewTab>, transport: &T, now: DateTime<Utc>) -> Result<Vec<Tab>> {
     let (loc, cr) = (account.location(), account.credentials());
     let f = folder(account, &loc, &cr, transport)?;
@@ -294,14 +317,14 @@ pub async fn recover<T: Transport>(account: &Account, refs: &[Ref], transport: &
     change(account, refs, transport, now, |n| n.deleted = None).await
 }
 
-/// Moves tabs to `Tabs/<rel>`.
+/// Moves tabs to `CleanTabs/<rel>`.
 pub async fn move_to<T: Transport>(account: &Account, refs: &[Ref], rel: &[String], transport: &T, now: DateTime<Utc>) -> Result<Vec<Tab>> {
     let path = tabs_path(rel);
     new_folder(account, rel, transport).await?;
     change(account, refs, transport, now, |n| n.folder = path.clone()).await
 }
 
-/// Makes the folder `Tabs/<rel>` (and its parents).
+/// Makes the folder `CleanTabs/<rel>` (and its parents).
 pub async fn new_folder<T: Transport>(account: &Account, rel: &[String], transport: &T) -> Result<()> {
     let (loc, cr) = (account.location(), account.credentials());
     let f = folder(account, &loc, &cr, transport)?;
@@ -359,29 +382,50 @@ mod tests {
             ];
             let saved = save(&a, &["Research".into()], new, &s3, now()).await.unwrap();
             assert_eq!(saved.len(), 3);
-            assert_eq!(saved[0].folder, ["Tabs", "Research"]);
-            assert_eq!(saved[1].folder, ["Tabs", "Research", "Docs"]);
+            assert_eq!(saved[0].folder, ["CleanTabs", "Research"]);
+            assert_eq!(saved[1].folder, ["CleanTabs", "Research", "Docs"]);
             assert!(saved[0].thumbnail.is_some() && saved[2].thumbnail.is_none());
             assert!(saved.iter().all(|t| t.id.starts_with("tab-")));
 
-            let l = list(&a, &s3).await.unwrap();
+            let l = list(&a, &s3, now()).await.unwrap();
             assert_eq!(l.tabs.iter().map(|t| t.title.as_str()).collect::<Vec<_>>(), ["A", "B", "C"], "in the order saved");
-            assert_eq!(l.folders, [vec!["Tabs"], vec!["Tabs", "Research"], vec!["Tabs", "Research", "Docs"]]);
+            assert_eq!(l.folders, [vec!["CleanTabs"], vec!["CleanTabs", "Research"], vec!["CleanTabs", "Research", "Docs"]]);
             let pic = thumbnail(&a, saved[0].thumbnail.as_ref().unwrap(), &s3).await.unwrap();
             assert_eq!(pic, Some(vec![0xff, 0xd8, 0xff, 1]));
 
             let r = |t: &Tab| Ref { stem: t.stem.clone() };
             let moved = move_to(&a, &[r(&saved[1])], &["Later".into()], &s3, now()).await.unwrap();
-            assert_eq!(moved[0].folder, ["Tabs", "Later"]);
+            assert_eq!(moved[0].folder, ["CleanTabs", "Later"]);
             // From the version in S3, not the one the caller had.
             let gone = delete(&a, &[r(&saved[1]), r(&saved[0])], &s3, now()).await.unwrap();
             assert_eq!(gone.len(), 2);
             assert!(gone.iter().all(|t| t.deleted.is_some()));
-            assert_eq!(gone[0].folder, ["Tabs", "Later"], "the move is kept");
+            assert_eq!(gone[0].folder, ["CleanTabs", "Later"], "the move is kept");
             let back = recover(&a, &[r(&gone[0])], &s3, now()).await.unwrap();
             assert!(back[0].deleted.is_none());
         });
         assert!(s3.objects.borrow().contains_key("CleanNotes/head"));
+    }
+
+    #[test]
+    fn tabs_the_first_version_saved_under_tabs_move_to_cleantabs() {
+        let s3 = FakeS3::new();
+        let a = account(None);
+        let body = TabNote { title: "Old".into(), url: "https://old.example/".into(), ..Default::default() }.to_markdown();
+        let old = NoteData { id: "tab-old".into(), folder: vec!["Tabs".into(), "Research".into()], body, created: now(), modified: now(), pinned: false, deleted: None };
+        s3.insert("CleanNotes/notes/tab-old.md", format::write(&old).into_bytes());
+        // A user's own note in a Tabs folder stays where it is.
+        let mine = NoteData { id: "6f1c0d3e".into(), folder: vec!["Tabs".into()], body: "# Mine\n".into(), ..old.clone() };
+        s3.insert("CleanNotes/notes/6f1c0d3e.md", format::write(&mine).into_bytes());
+        block_on(async {
+            let l = list(&a, &s3, now()).await.unwrap();
+            assert_eq!(l.tabs.len(), 1);
+            assert_eq!(l.tabs[0].folder, ["CleanTabs", "Research"]);
+            assert_eq!(l.folders, [vec!["CleanTabs"], vec!["CleanTabs", "Research"]]);
+        });
+        let objects = s3.objects.borrow();
+        assert!(String::from_utf8_lossy(&objects["CleanNotes/notes/tab-old.md"].0).contains("folder: [CleanTabs, Research]"));
+        assert!(String::from_utf8_lossy(&objects["CleanNotes/notes/6f1c0d3e.md"].0).contains("folder: [Tabs]"));
     }
 
     #[test]
@@ -398,10 +442,10 @@ mod tests {
             let a = account(c.key);
             let new = vec![NewTab { url: "https://secret.example/".into(), title: "Secret".into(), thumbnail: Some(jpeg(2)), ..Default::default() }];
             let saved = save(&a, &[], new, &s3, now()).await.unwrap();
-            assert_eq!(saved[0].folder, ["Tabs"]);
-            assert_eq!(list(&a, &s3).await.unwrap().tabs[0].title, "Secret");
+            assert_eq!(saved[0].folder, ["CleanTabs"]);
+            assert_eq!(list(&a, &s3, now()).await.unwrap().tabs[0].title, "Secret");
             assert!(thumbnail(&a, saved[0].thumbnail.as_ref().unwrap(), &s3).await.unwrap().is_some());
-            assert!(list(&account(None), &s3).await.unwrap().tabs.is_empty(), "unreadable without the key");
+            assert!(list(&account(None), &s3, now()).await.unwrap().tabs.is_empty(), "unreadable without the key");
         });
         for (k, (v, _)) in s3.objects.borrow().iter() {
             assert!(!String::from_utf8_lossy(v).contains("secret.example"), "{k} is in clear");

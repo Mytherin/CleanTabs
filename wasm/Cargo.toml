@@ -11,7 +11,7 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 # CleanNotes' S3 folder: its note format, encryption, and tab notes. Pinned
 # to a revision; to work on both at once, see the README.
-cleanbucket = { git = "https://github.com/Mytherin/CleanNotes", rev = "c70ef85000e5eaa161588f310c263ef187af1515" }
+cleanbucket = { git = "https://github.com/Mytherin/CleanNotes", rev = "31f90212344abd60470a961640482a133b7a4887" }
 # Pinned: must match the wasm-bindgen CLI that builds the extension
 # (extension/build.mjs).
 wasm-bindgen = "=0.2.100"
@@ -25,4 +25,4 @@ futures = { version = "0.3", default-features = false, features = ["std", "async
 chrono = { version = "0.4", default-features = false, features = ["serde", "clock", "std", "wasmbind"] }
 
 [dev-dependencies]
-cleanbucket = { git = "https://github.com/Mytherin/CleanNotes", rev = "c70ef85000e5eaa161588f310c263ef187af1515", features = ["fake"] }
+cleanbucket = { git = "https://github.com/Mytherin/CleanNotes", rev = "31f90212344abd60470a961640482a133b7a4887", features = ["fake"] }
